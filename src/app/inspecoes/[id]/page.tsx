@@ -1,59 +1,19 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import { InspectionDetail } from "@/components/inspections/inspection-detail";
+import { NetworkErrorState } from "@/components/inspections/network-error-state";
 import { AppShell } from "@/components/layout/app-shell";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Inspection } from "@/domain/inspection.types";
-import { getInspection } from "@/services/inspection.repository";
+import { useInspectionById } from "@/hooks/use-inspection-by-id";
+import { useInspections } from "@/providers/inspection-provider";
 
 export default function InspectionDetailPage() {
 	const params = useParams<{ id: string }>();
 	const router = useRouter();
-	const [inspection, setInspection] = useState<Inspection | null>(null);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-
-	useEffect(() => {
-		let active = true;
-
-		const load = async () => {
-			setLoading(true);
-			setError(null);
-			try {
-				const data = await getInspection(params.id);
-				if (!active) {
-					return;
-				}
-				if (!data) {
-					setError("Inspeção não encontrada.");
-					setInspection(null);
-				} else {
-					setInspection(data);
-				}
-			} catch (loadError) {
-				if (!active) {
-					return;
-				}
-				setError(
-					loadError instanceof Error
-						? loadError.message
-						: "Não foi possível carregar a inspeção.",
-				);
-			} finally {
-				if (active) {
-					setLoading(false);
-				}
-			}
-		};
-
-		void load();
-		return () => {
-			active = false;
-		};
-	}, [params.id]);
+	const { refresh, refreshing } = useInspections();
+	const { inspection, loading, error } = useInspectionById(params.id);
 
 	return (
 		<AppShell>
@@ -62,9 +22,20 @@ export default function InspectionDetailPage() {
 					Voltar
 				</Button>
 			</div>
+
 			{loading ? <Skeleton className="h-96 w-full" /> : null}
-			{error ? <p className="text-sm text-rose-600">{error}</p> : null}
-			{inspection ? <InspectionDetail inspection={inspection} /> : null}
+
+			{error ? (
+				<NetworkErrorState
+					message={error}
+					onRetry={refresh}
+					retrying={refreshing}
+				/>
+			) : null}
+
+			{!loading && !error && inspection ? (
+				<InspectionDetail inspection={inspection} />
+			) : null}
 		</AppShell>
 	);
 }

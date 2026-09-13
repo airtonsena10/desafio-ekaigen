@@ -1,19 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import { ChecklistForm } from "@/components/inspections/checklist-form";
 import { HistoryTimeline } from "@/components/inspections/history-timeline";
+import { InspectionActionFooter } from "@/components/inspections/inspection-action-footer";
+import { InspectionMetadataFields } from "@/components/inspections/inspection-metadata-fields";
+import { InspectionRejectionAlert } from "@/components/inspections/inspection-rejection-alert";
+import { InspectionReviewPanel } from "@/components/inspections/inspection-review-panel";
 import { StatusBadge } from "@/components/inspections/status-badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
-import type { Inspection, InspectionAction } from "@/domain/inspection.types";
-import { canEditInspection } from "@/domain/inspection.validation";
-import { useInspections } from "@/providers/inspection-provider";
-import { useRole } from "@/providers/role-provider";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { Inspection } from "@/domain/inspection.types";
+import { useInspectionForm } from "@/hooks/use-inspection-form";
+import { cn } from "@/lib/utils";
 
 interface InspectionDetailProps {
 	inspection: Inspection;
@@ -24,230 +21,107 @@ export function InspectionDetail({
 	inspection,
 	onClose,
 }: InspectionDetailProps) {
-	const { role } = useRole();
-	const { saveDraft, executeAction } = useInspections();
-	const [formState, setFormState] = useState(inspection);
-	const [motivoReprovacao, setMotivoReprovacao] = useState("");
-	const [submitting, setSubmitting] = useState(false);
-
-	useEffect(() => {
-		setFormState(inspection);
-		setMotivoReprovacao("");
-	}, [inspection]);
-
-	const editable = canEditInspection(formState.status);
-
-	const updateField = <K extends keyof Inspection>(
-		field: K,
-		value: Inspection[K],
-	) => {
-		setFormState((current) => ({ ...current, [field]: value }));
-	};
-
-	const runAction = async (
-		action: InspectionAction,
-		options?: { closeOnSuccess?: boolean },
-	) => {
-		setSubmitting(true);
-		const result = await executeAction(formState.id, action);
-		setSubmitting(false);
-
-		if (!result.ok) {
-			toast.error(result.error);
-			return false;
-		}
-
-		setFormState(result.value);
-		toast.success("Operação realizada com sucesso.");
-
-		if (options?.closeOnSuccess) {
-			onClose?.();
-		}
-
-		return true;
-	};
-
-	const persistDraft = async (): Promise<boolean> => {
-		setSubmitting(true);
-		const result = await saveDraft(formState.id, {
-			equipamento: formState.equipamento,
-			setor: formState.setor,
-			responsavel: formState.responsavel,
-			data: formState.data,
-			checklist: formState.checklist,
-		});
-		setSubmitting(false);
-
-		if (!result.ok) {
-			toast.error(result.error);
-			return false;
-		}
-
-		setFormState(result.value);
-		return true;
-	};
-
-	const handleSaveDraft = async () => {
-		const saved = await persistDraft();
-		if (saved) {
-			toast.success("Rascunho salvo.");
-		}
-	};
-
-	const handleSubmitForReview = async () => {
-		if (!(await persistDraft())) {
-			return;
-		}
-
-		await runAction({ type: "submit_for_review", role }, { closeOnSuccess: true });
-	};
-
-	const handleApprove = async () => {
-		await runAction({ type: "approve", role });
-	};
-
-	const handleReject = async () => {
-		await runAction({ type: "reject", role, motivo: motivoReprovacao });
-	};
-
-	const handleResubmit = async () => {
-		if (!(await persistDraft())) {
-			return;
-		}
-
-		await runAction({ type: "resubmit", role });
-	};
+	const isModal = Boolean(onClose);
+	const {
+		formState,
+		editable,
+		submitting,
+		checklistAnswered,
+		reviewDecision,
+		setReviewDecision,
+		motivoReprovacao,
+		setMotivoReprovacao,
+		updateField,
+		scheduleAutoSave,
+		handleAutoSave,
+		handleSaveDraft,
+		handleSubmitForReview,
+		handleConfirmReview,
+		handleResubmit,
+		showInspectorActions,
+		showResubmitAction,
+		showReviewerActions,
+		hasFooterActions,
+	} = useInspectionForm({ inspection, onClose });
 
 	return (
-		<div className="space-y-6">
-			<div className="flex flex-wrap items-start justify-between gap-3">
-				<div>
-					<p className="text-sm text-muted-foreground">Protocolo</p>
-					<h2 className="text-2xl font-semibold">{formState.protocolo}</h2>
-				</div>
-				<StatusBadge status={formState.status} />
-			</div>
-
-			<div className="grid gap-4 md:grid-cols-2">
-				<div className="space-y-2">
-					<Label htmlFor="equipamento">Equipamento</Label>
-					<Input
-						id="equipamento"
-						value={formState.equipamento}
-						onChange={(event) => updateField("equipamento", event.target.value)}
-						disabled={!editable}
-					/>
-				</div>
-				<div className="space-y-2">
-					<Label htmlFor="setor">Setor</Label>
-					<Input
-						id="setor"
-						value={formState.setor}
-						onChange={(event) => updateField("setor", event.target.value)}
-						disabled={!editable}
-					/>
-				</div>
-				<div className="space-y-2">
-					<Label htmlFor="responsavel">Responsável</Label>
-					<Input
-						id="responsavel"
-						value={formState.responsavel}
-						onChange={(event) => updateField("responsavel", event.target.value)}
-						disabled={!editable}
-					/>
-				</div>
-				<div className="space-y-2">
-					<Label htmlFor="data">Data</Label>
-					<Input
-						id="data"
-						type="date"
-						value={formState.data}
-						onChange={(event) => updateField("data", event.target.value)}
-						disabled={!editable}
-					/>
-				</div>
-			</div>
-
-			<div className="space-y-3">
-				<h3 className="text-lg font-semibold">Checklist</h3>
-				<ChecklistForm
-					items={formState.checklist}
-					disabled={!editable}
-					onChange={(checklist) => updateField("checklist", checklist)}
-				/>
-			</div>
-
+		<div
+			className={cn("space-y-6", hasFooterActions && "pb-28 md:pb-0")}
+			aria-busy={submitting}
+		>
 			{formState.motivoReprovacao ? (
-				<div className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">
-					<p className="font-medium">Motivo da reprovação</p>
-					<p>{formState.motivoReprovacao}</p>
-				</div>
+				<InspectionRejectionAlert motivo={formState.motivoReprovacao} />
 			) : null}
 
-			<div className="flex flex-wrap justify-center gap-2">
-				{editable && role === "inspetor" ? (
-					<Button
-						disabled={submitting}
-						onClick={handleSaveDraft}
-						variant="secondary"
-					>
-						Salvar rascunho
-					</Button>
-				) : null}
-
-				{formState.status === "em_preenchimento" && role === "inspetor" ? (
-					<Button disabled={submitting} onClick={handleSubmitForReview}>
-						Encaminhar para revisão
-					</Button>
-				) : null}
-
-				{formState.status === "reprovada" && role === "inspetor" ? (
-					<Button disabled={submitting} onClick={handleResubmit}>
-						Reenviar correção
-					</Button>
-				) : null}
-
-				{formState.status === "em_aprovacao" && role === "revisor" ? (
-					<Button disabled={submitting} onClick={handleApprove}>
-						Aprovar
-					</Button>
-				) : null}
-			</div>
-
-			{formState.status === "em_aprovacao" && role === "revisor" ? (
-				<div className="space-y-2 rounded-lg border p-4">
-					<Label htmlFor="motivo-reprovacao">Motivo da reprovação</Label>
-					<Textarea
-						id="motivo-reprovacao"
-						value={motivoReprovacao}
-						onChange={(event) => setMotivoReprovacao(event.target.value)}
-						placeholder="Descreva o motivo com pelo menos 10 caracteres"
-					/>
-					<div className="flex justify-center">
-						<Button
-							disabled={submitting}
-							variant="destructive"
-							onClick={handleReject}
-						>
-							Reprovar
-						</Button>
+			<header className="space-y-4 border-b pb-5">
+				{!isModal ? (
+					<div className="flex items-center justify-between gap-3">
+						<p className="font-mono text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+							{formState.protocolo}
+						</p>
+						<StatusBadge status={formState.status} />
 					</div>
-				</div>
-			) : null}
+				) : null}
 
-			<Separator />
+				<InspectionMetadataFields
+					inspection={formState}
+					editable={editable}
+					submitting={submitting}
+					showTitle={!isModal}
+					onFieldChange={updateField}
+					onFieldBlur={handleAutoSave}
+				/>
+			</header>
 
-			<div className="space-y-3">
-				<h3 className="text-lg font-semibold">Histórico</h3>
-				<HistoryTimeline entries={formState.historico} />
-			</div>
+			<Tabs defaultValue="checklist" className="gap-4">
+				<TabsList className="w-full">
+					<TabsTrigger value="checklist" className="flex-1">
+						Checklist
+						<span className="ml-1.5 text-xs text-muted-foreground tabular-nums">
+							{checklistAnswered}/{formState.checklist.length}
+						</span>
+					</TabsTrigger>
+					<TabsTrigger value="historico" className="flex-1">
+						Histórico
+					</TabsTrigger>
+				</TabsList>
 
-			{onClose ? (
-				<div className="flex justify-center">
-					<Button variant="outline" onClick={onClose}>
-						Fechar
-					</Button>
-				</div>
+				<TabsContent value="checklist" className="space-y-6">
+					<ChecklistForm
+						items={formState.checklist}
+						disabled={!editable || submitting}
+						onChange={(checklist) => updateField("checklist", checklist)}
+						onAutoSave={scheduleAutoSave}
+					/>
+
+					{showReviewerActions ? (
+						<InspectionReviewPanel
+							submitting={submitting}
+							reviewDecision={reviewDecision}
+							motivoReprovacao={motivoReprovacao}
+							onDecisionChange={setReviewDecision}
+							onMotivoChange={setMotivoReprovacao}
+						/>
+					) : null}
+				</TabsContent>
+
+				<TabsContent value="historico">
+					<HistoryTimeline entries={formState.historico} />
+				</TabsContent>
+			</Tabs>
+
+			{hasFooterActions ? (
+				<InspectionActionFooter
+					submitting={submitting}
+					showInspectorActions={showInspectorActions}
+					showResubmitAction={showResubmitAction}
+					showReviewerActions={showReviewerActions}
+					reviewDecision={reviewDecision}
+					onSaveDraft={handleSaveDraft}
+					onSubmitForReview={handleSubmitForReview}
+					onResubmit={handleResubmit}
+					onConfirmReview={handleConfirmReview}
+				/>
 			) : null}
 		</div>
 	);

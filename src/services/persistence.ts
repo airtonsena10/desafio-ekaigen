@@ -1,4 +1,5 @@
 import type { Inspection } from "../domain/inspection.types";
+import { parsePersistedState } from "./persistence.schema";
 
 const STORAGE_KEY = "inspecoes-app-data";
 
@@ -26,21 +27,10 @@ export function readPersistedState(): PersistedState | null {
 
 	try {
 		const parsed: unknown = JSON.parse(rawValue);
-		if (
-			typeof parsed === "object" &&
-			parsed !== null &&
-			"inspections" in parsed &&
-			"protocolCounter" in parsed &&
-			Array.isArray(parsed.inspections) &&
-			typeof parsed.protocolCounter === "number"
-		) {
-			return parsed as PersistedState;
-		}
+		return parsePersistedState(parsed);
 	} catch {
 		return null;
 	}
-
-	return null;
 }
 
 export function writePersistedState(state: PersistedState): void {

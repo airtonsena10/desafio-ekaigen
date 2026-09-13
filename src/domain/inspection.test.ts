@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { countByStatus, filterInspections } from "@/domain/inspection.queries";
 import {
 	applyInspectionAction,
 	generateProtocol,
@@ -7,10 +8,9 @@ import type { Inspection } from "@/domain/inspection.types";
 import { createEmptyChecklist } from "@/domain/inspection.types";
 import {
 	canEditInspection,
-	countByStatus,
-	filterInspections,
 	validateApprove,
 	validateChecklistComplete,
+	validateCreateInspectionInput,
 	validateDraftUpdate,
 	validateReject,
 	validateRequiredMetadata,
@@ -93,6 +93,17 @@ describe("inspection.validation", () => {
 		expect(validateRequiredMetadata(buildInspection({ data: "" }))).toContain(
 			"data",
 		);
+
+		expect(
+			validateCreateInspectionInput({
+				equipamento: "",
+				setor: "",
+				responsavel: "",
+				data: "",
+			}),
+		).toBe(
+			"Preencha os campos: equipamento, setor, responsável e data.",
+		);
 	});
 
 	it("validates submit, approve, reject and resubmit rules", () => {
@@ -107,10 +118,7 @@ describe("inspection.validation", () => {
 			validateApprove(buildInspection({ status: "em_aprovacao" }), "revisor"),
 		).toBeNull();
 		expect(
-			validateApprove(
-				buildInspection({ status: "em_aprovacao" }),
-				"inspetor",
-			),
+			validateApprove(buildInspection({ status: "em_aprovacao" }), "inspetor"),
 		).toContain("revisor");
 		expect(
 			validateApprove(

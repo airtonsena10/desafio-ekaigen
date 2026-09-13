@@ -8,8 +8,8 @@ import type {
 	InspectionDraftUpdate,
 } from "../domain/inspection.types";
 import { createEmptyChecklist } from "../domain/inspection.types";
-import { err, ok, type Result } from "../domain/result";
 import { validateCreateInspectionInput } from "../domain/inspection.validation";
+import { err, ok, type Result } from "../domain/result";
 import { createSeedState } from "./mock-data";
 import {
 	clearPersistedState,

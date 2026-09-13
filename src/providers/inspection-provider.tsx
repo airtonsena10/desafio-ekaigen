@@ -7,6 +7,7 @@ import {
 	useContext,
 	useEffect,
 	useMemo,
+	useRef,
 	useState,
 } from "react";
 import type {
@@ -15,9 +16,11 @@ import type {
 	InspectionDraftUpdate,
 } from "@/domain/inspection.types";
 import type { Result } from "@/domain/result";
+import { toErrorMessage } from "@/lib/error-message";
 import {
 	type CreateInspectionInput,
 	createInspection,
+	getInspection,
 	listInspections,
 	performInspectionAction,
 	restoreMockData,
@@ -27,6 +30,7 @@ import {
 interface InspectionContextValue {
 	inspections: Inspection[];
 	loading: boolean;
+	refreshing: boolean;
 	error: string | null;
 	selectedId: string | null;
 	setSelectedId: (id: string | null) => void;
@@ -42,32 +46,62 @@ interface InspectionContextValue {
 		id: string,
 		action: InspectionAction,
 	) => Promise<Result<Inspection>>;
+	resolveInspection: (id: string) => Promise<Result<Inspection>>;
 	restoreMock: () => Promise<void>;
 }
 
 const InspectionContext = createContext<InspectionContextValue | null>(null);
 
+async function runRepositoryOperation<T>(
+	operation: () => Promise<Result<T>>,
+	fallbackMessage: string,
+): Promise<Result<T>> {
+	try {
+		return await operation();
+	} catch (error) {
+		return { ok: false, error: toErrorMessage(error, fallbackMessage) };
+	}
+}
+
+function updateInspectionInList(
+	inspections: Inspection[],
+	updatedInspection: Inspection,
+): Inspection[] {
+	return inspections.map((inspection) =>
+		inspection.id === updatedInspection.id ? updatedInspection : inspection,
+	);
+}
+
 export function InspectionProvider({ children }: { children: ReactNode }) {
 	const [inspections, setInspections] = useState<Inspection[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [refreshing, setRefreshing] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [selectedId, setSelectedId] = useState<string | null>(null);
+	const inspectionsRef = useRef(inspections);
+	inspectionsRef.current = inspections;
 
 	const refresh = useCallback(async () => {
-		setLoading(true);
+		const isInitialLoad = inspectionsRef.current.length === 0;
+
+		if (isInitialLoad) {
+			setLoading(true);
+		} else {
+			setRefreshing(true);
+		}
+
 		setError(null);
 
 		try {
 			const data = await listInspections();
 			setInspections(data);
 		} catch (refreshError) {
-			const message =
-				refreshError instanceof Error
-					? refreshError.message
-					: "Não foi possível carregar as inspeções.";
-			setError(message);
+			setError(
+				toErrorMessage(refreshError, "Não foi possível carregar as inspeções."),
+			);
 		} finally {
 			setLoading(false);
+			setRefreshing(false);
 		}
 	}, []);
 
@@ -77,84 +111,117 @@ export function InspectionProvider({ children }: { children: ReactNode }) {
 
 	const createNewInspection = useCallback(
 		async (input: CreateInspectionInput) => {
-			try {
-				const result = await createInspection(input);
-				if (result.ok) {
-					await refresh();
-				}
-				return result;
-			} catch (creationError) {
-				const message =
-					creationError instanceof Error
-						? creationError.message
-						: "Não foi possível criar a inspeção.";
-				return { ok: false as const, error: message };
+			const result = await runRepositoryOperation(
+				() => createInspection(input),
+				"Não foi possível criar a inspeção.",
+			);
+
+			if (result.ok) {
+				await refresh();
 			}
+
+			return result;
 		},
 		[refresh],
 	);
 
 	const saveDraft = useCallback(
 		async (id: string, updates: InspectionDraftUpdate) => {
-			try {
-				const result = await saveInspectionDraft(id, updates);
-				if (result.ok) {
-					setInspections((current) =>
-						current.map((inspection) =>
-							inspection.id === id ? result.value : inspection,
-						),
-					);
-				}
-				return result;
-			} catch (saveError) {
-				const message =
-					saveError instanceof Error
-						? saveError.message
-						: "Não foi possível salvar o rascunho.";
-				return { ok: false as const, error: message };
+			const result = await runRepositoryOperation(
+				() => saveInspectionDraft(id, updates),
+				"Não foi possível salvar o rascunho.",
+			);
+
+			if (result.ok) {
+				setInspections((current) =>
+					updateInspectionInList(current, result.value),
+				);
 			}
+
+			return result;
 		},
 		[],
 	);
 
 	const executeAction = useCallback(
 		async (id: string, action: InspectionAction) => {
-			try {
-				const result = await performInspectionAction(id, action);
-				if (result.ok) {
-					setInspections((current) =>
-						current.map((inspection) =>
-							inspection.id === id ? result.value : inspection,
-						),
-					);
-				}
-				return result;
-			} catch (actionError) {
-				const message =
-					actionError instanceof Error
-						? actionError.message
-						: "Não foi possível executar a ação.";
-				return { ok: false as const, error: message };
+			const result = await runRepositoryOperation(
+				() => performInspectionAction(id, action),
+				"Não foi possível executar a ação.",
+			);
+
+			if (result.ok) {
+				setInspections((current) =>
+					updateInspectionInList(current, result.value),
+				);
 			}
+
+			return result;
 		},
 		[],
 	);
 
+	const resolveInspection = useCallback(async (id: string) => {
+		const cached = inspectionsRef.current.find(
+			(inspection) => inspection.id === id,
+		);
+
+		if (cached) {
+			return { ok: true as const, value: cached };
+		}
+
+		try {
+			const inspection = await getInspection(id);
+			if (!inspection) {
+				return {
+					ok: false as const,
+					error: "Inspeção não encontrada.",
+				};
+			}
+
+			setInspections((current) => {
+				const exists = current.some((item) => item.id === id);
+				if (exists) {
+					return updateInspectionInList(current, inspection);
+				}
+
+				return [...current, inspection];
+			});
+
+			return { ok: true as const, value: inspection };
+		} catch (error) {
+			return {
+				ok: false as const,
+				error: toErrorMessage(error, "Não foi possível carregar a inspeção."),
+			};
+		}
+	}, []);
+
 	const restoreMock = useCallback(async () => {
-		setLoading(true);
+		const isInitialLoad = inspectionsRef.current.length === 0;
+
+		if (isInitialLoad) {
+			setLoading(true);
+		} else {
+			setRefreshing(true);
+		}
+
 		setError(null);
+
 		try {
 			const data = await restoreMockData();
 			setInspections(data);
 			setSelectedId(null);
 		} catch (restoreError) {
-			const message =
-				restoreError instanceof Error
-					? restoreError.message
-					: "Não foi possível restaurar os dados mock.";
-			setError(message);
+			setError(
+				toErrorMessage(
+					restoreError,
+					"Não foi possível restaurar os dados mock.",
+				),
+			);
 		} finally {
 			setLoading(false);
+			setRefreshing(false);
 		}
 	}, []);
 
@@ -162,6 +229,7 @@ export function InspectionProvider({ children }: { children: ReactNode }) {
 		() => ({
 			inspections,
 			loading,
+			refreshing,
 			error,
 			selectedId,
 			setSelectedId,
@@ -169,17 +237,20 @@ export function InspectionProvider({ children }: { children: ReactNode }) {
 			createNewInspection,
 			saveDraft,
 			executeAction,
+			resolveInspection,
 			restoreMock,
 		}),
 		[
 			inspections,
 			loading,
+			refreshing,
 			error,
 			selectedId,
 			refresh,
 			createNewInspection,
 			saveDraft,
 			executeAction,
+			resolveInspection,
 			restoreMock,
 		],
 	);

@@ -1,16 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { InspectionDetailModal } from "@/components/inspections/inspection-detail-modal";
-import { SearchFilters } from "@/components/inspections/search-filters";
-import { StatusBadge } from "@/components/inspections/status-badge";
-import { Button } from "@/components/ui/button";
+import { useEffect, useMemo, useState } from "react";
+import { KanbanColumnsSkeleton } from "@/components/inspections/inspection-cards-skeleton";
+import { InspectionSummaryCard } from "@/components/inspections/inspection-summary-card";
+import { InspectionViewShell } from "@/components/inspections/inspection-view-shell";
+import { STATUS_THEME } from "@/components/inspections/status-theme";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+	groupInspectionsByStatus,
+	parseInspectionStatus,
+} from "@/domain/inspection.queries";
 import type { Inspection, InspectionStatus } from "@/domain/inspection.types";
 import { INSPECTION_STATUSES, STATUS_LABELS } from "@/domain/inspection.types";
-import { filterInspections } from "@/domain/inspection.validation";
-import { useInspections } from "@/providers/inspection-provider";
+import { useFilteredInspections } from "@/hooks/use-filtered-inspections";
+import { useInspectionModal } from "@/hooks/use-inspection-modal";
+import { cn } from "@/lib/utils";
 import { useRole } from "@/providers/role-provider";
 
 function KanbanCard({
@@ -22,136 +27,184 @@ function KanbanCard({
 }) {
 	const { role } = useRole();
 	const actionLabel =
-		role === "revisor" && inspection.status === "em_aprovacao" ? "Revisar" : "Abrir";
+		role === "revisor" && inspection.status === "em_aprovacao"
+			? "Revisar"
+			: "Abrir";
+
+	return (
+		<InspectionSummaryCard
+			inspection={inspection}
+			actionLabel={actionLabel}
+			onOpen={onOpen}
+			variant="kanban"
+			className="hover:translate-y-0"
+		/>
+	);
+}
+
+function KanbanColumn({
+	columnStatus,
+	items,
+	onOpen,
+}: {
+	columnStatus: InspectionStatus;
+	items: Inspection[];
+	onOpen: (id: string) => void;
+}) {
+	const theme = STATUS_THEME[columnStatus];
 
 	return (
 		<Card
-			className="cursor-pointer shadow-sm transition-colors hover:bg-muted/40"
-			onClick={() => onOpen(inspection.id)}
+			className={cn(
+				"min-w-[280px] shrink-0 overflow-hidden border shadow-sm xl:min-w-0",
+				theme.column,
+			)}
 		>
-			<CardContent className="space-y-3 py-4">
-				<div className="flex items-start justify-between gap-2">
-					<div>
-						<p className="font-medium">{inspection.protocolo}</p>
-						<p className="text-sm text-muted-foreground">
-							{inspection.equipamento}
-						</p>
+			<CardHeader className="border-b border-black/5 pb-3">
+				<CardTitle className="flex items-center justify-between text-base">
+					<span className={cn("flex items-center gap-2", theme.label)}>
+						<span className={cn("size-2.5 rounded-full", theme.dot)} />
+						{STATUS_LABELS[columnStatus]}
+					</span>
+					<span className="rounded-full bg-background/90 px-2.5 py-1 text-xs font-semibold tabular-nums text-foreground shadow-sm">
+						{items.length}
+					</span>
+				</CardTitle>
+			</CardHeader>
+			<CardContent className="space-y-3 p-3">
+				{items.length === 0 ? (
+					<div className="rounded-xl border border-dashed bg-background/70 px-3 py-10 text-center text-sm text-muted-foreground">
+						Sem itens nesta etapa
 					</div>
-					<StatusBadge status={inspection.status} />
-				</div>
-				<p className="text-sm">
-					{inspection.setor} • {inspection.responsavel}
-				</p>
-				<p className="text-xs text-muted-foreground">{inspection.data}</p>
-				<Button
-					className="w-full"
-					size="sm"
-					variant="outline"
-					onClick={(event) => {
-						event.stopPropagation();
-						onOpen(inspection.id);
-					}}
-				>
-					{actionLabel}
-				</Button>
+				) : (
+					items.map((inspection, index) => (
+						<div
+							key={inspection.id}
+							className="animate-fade-up"
+							style={{ animationDelay: `${index * 40}ms` }}
+						>
+							<KanbanCard inspection={inspection} onOpen={onOpen} />
+						</div>
+					))
+				)}
 			</CardContent>
 		</Card>
 	);
 }
 
 export function InspectionKanbanView() {
-	const { inspections, loading, error, refresh, selectedId, setSelectedId } =
-		useInspections();
-	const [query, setQuery] = useState("");
-	const [status, setStatus] = useState<InspectionStatus | "all">("all");
+	const { filteredInspections, status, setStatus } = useFilteredInspections();
+	const {
+		selectedInspection,
+		modalOpen,
+		openInspectionById,
+		handleModalOpenChange,
+	} = useInspectionModal();
 
-	const filteredInspections = useMemo(
-		() => filterInspections(inspections, query, status),
-		[inspections, query, status],
+	const grouped = useMemo(
+		() => groupInspectionsByStatus(filteredInspections),
+		[filteredInspections],
 	);
 
-	const grouped = useMemo(() => {
-		return INSPECTION_STATUSES.reduce(
-			(groups, item) => {
-				groups[item] = filteredInspections.filter(
-					(inspection) => inspection.status === item,
-				);
-				return groups;
-			},
-			{} as Record<InspectionStatus, Inspection[]>,
-		);
-	}, [filteredInspections]);
+	const [mobileTab, setMobileTab] =
+		useState<InspectionStatus>("em_preenchimento");
 
-	const selectedInspection =
-		inspections.find((inspection) => inspection.id === selectedId) ?? null;
+	useEffect(() => {
+		if (status !== "all") {
+			setMobileTab(status);
+		}
+	}, [status]);
+
+	const visibleCount =
+		status === "all" ? grouped[mobileTab].length : filteredInspections.length;
 
 	return (
-		<div className="space-y-6">
-			<SearchFilters
-				query={query}
-				status={status}
-				onQueryChange={setQuery}
-				onStatusChange={setStatus}
-			/>
+		<InspectionViewShell
+			title="Kanban de inspeções"
+			description="Acompanhe cada etapa do fluxo com cards organizados por status."
+			count={visibleCount}
+			loadingFallback={<KanbanColumnsSkeleton />}
+			selectedInspection={selectedInspection}
+			modalOpen={modalOpen}
+			onModalOpenChange={handleModalOpenChange}
+		>
+			<div className="xl:hidden">
+				<Tabs
+					value={mobileTab}
+					onValueChange={(value) => {
+						const nextStatus = parseInspectionStatus(value);
+						if (!nextStatus) {
+							return;
+						}
 
-			{loading ? (
-				<div className="grid gap-4 md:grid-cols-4">
-					{INSPECTION_STATUSES.map((item) => (
-						<Skeleton key={item} className="h-48 w-full" />
+						setMobileTab(nextStatus);
+						if (status !== "all") {
+							setStatus(nextStatus);
+						}
+					}}
+				>
+					<TabsList className="scrollbar-thin h-auto w-full justify-start overflow-x-auto p-1">
+						{INSPECTION_STATUSES.map((columnStatus) => {
+							const theme = STATUS_THEME[columnStatus];
+							return (
+								<TabsTrigger
+									key={columnStatus}
+									value={columnStatus}
+									className="min-h-10 shrink-0 gap-2 px-3"
+								>
+									<span className={cn("size-2 rounded-full", theme.dot)} />
+									{STATUS_LABELS[columnStatus]}
+									<span className="rounded-full bg-muted px-1.5 py-0.5 text-[11px] tabular-nums">
+										{grouped[columnStatus].length}
+									</span>
+								</TabsTrigger>
+							);
+						})}
+					</TabsList>
+
+					{INSPECTION_STATUSES.map((columnStatus) => (
+						<TabsContent
+							key={columnStatus}
+							value={columnStatus}
+							className="mt-4"
+						>
+							<div className="space-y-3">
+								{grouped[columnStatus].length === 0 ? (
+									<div className="rounded-xl border border-dashed px-4 py-12 text-center text-sm text-muted-foreground">
+										Nenhuma inspeção em{" "}
+										{STATUS_LABELS[columnStatus].toLowerCase()}
+									</div>
+								) : (
+									grouped[columnStatus].map((inspection, index) => (
+										<div
+											key={inspection.id}
+											className="animate-fade-up"
+											style={{ animationDelay: `${index * 40}ms` }}
+										>
+											<KanbanCard
+												inspection={inspection}
+												onOpen={openInspectionById}
+											/>
+										</div>
+									))
+								)}
+							</div>
+						</TabsContent>
 					))}
-				</div>
-			) : null}
-
-			{error ? (
-				<Card>
-					<CardContent className="flex flex-col gap-3 py-6">
-						<p className="text-sm text-rose-600">{error}</p>
-						<Button onClick={() => void refresh()} variant="outline">
-							Tentar novamente
-						</Button>
-					</CardContent>
-				</Card>
-			) : null}
-
-			<div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-4">
-				{INSPECTION_STATUSES.map((columnStatus) => (
-					<Card key={columnStatus}>
-						<CardHeader className="pb-3">
-							<CardTitle className="flex items-center justify-between text-base">
-								<span>{STATUS_LABELS[columnStatus]}</span>
-								<span className="rounded-full bg-muted px-2 py-1 text-xs">
-									{grouped[columnStatus].length}
-								</span>
-							</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-3">
-							{grouped[columnStatus].length === 0 ? (
-								<p className="text-sm text-muted-foreground">
-									Sem itens nesta etapa.
-								</p>
-							) : (
-								grouped[columnStatus].map((inspection) => (
-									<KanbanCard
-										key={inspection.id}
-										inspection={inspection}
-										onOpen={setSelectedId}
-									/>
-								))
-							)}
-						</CardContent>
-					</Card>
-				))}
+				</Tabs>
 			</div>
 
-			<InspectionDetailModal
-				open={selectedId !== null}
-				onOpenChange={(open) => {
-					if (!open) {
-						setSelectedId(null);
-					}
-				}}
-				inspection={selectedInspection}
-			/>
-		</div>
+			<div className="hidden snap-x snap-mandatory gap-4 overflow-x-auto pb-2 scrollbar-thin xl:grid xl:grid-cols-4 xl:overflow-visible xl:snap-none">
+				{INSPECTION_STATUSES.map((columnStatus) => (
+					<div key={columnStatus} className="snap-center xl:snap-align-none">
+						<KanbanColumn
+							columnStatus={columnStatus}
+							items={grouped[columnStatus]}
+							onOpen={openInspectionById}
+						/>
+					</div>
+				))}
+			</div>
+		</InspectionViewShell>
 	);
 }

@@ -1,13 +1,28 @@
-import { render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactElement } from "react";
-import { describe, expect, it, vi } from "vitest";
-import { SearchFilters } from "@/components/inspections/search-filters";
-import { StatusCounters } from "@/components/inspections/status-counters";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Inspection } from "@/domain/inspection.types";
 import { createEmptyChecklist } from "@/domain/inspection.types";
 import { InspectionProvider } from "@/providers/inspection-provider";
 import { RoleProvider } from "@/providers/role-provider";
+
+const mockPush = vi.fn();
+const mockSearchParams = new URLSearchParams();
+
+vi.mock("next/navigation", () => ({
+	useRouter: () => ({ push: mockPush }),
+	usePathname: () => "/inspecoes",
+	useSearchParams: () => mockSearchParams,
+}));
+
+import { SearchFilters } from "@/components/inspections/search-filters";
+import { StatusCounters } from "@/components/inspections/status-counters";
+
+afterEach(() => {
+	cleanup();
+	mockPush.mockClear();
+});
 
 const sampleInspection: Inspection = {
 	id: "1",
@@ -47,6 +62,27 @@ describe("StatusCounters", () => {
 
 		expect(screen.getByText("Em aprovação")).toBeInTheDocument();
 		expect(screen.getByText("Aprovada")).toBeInTheDocument();
+	});
+
+	it("filters by status when clicked", async () => {
+		const user = userEvent.setup();
+
+		render(
+			<StatusCounters
+				inspections={[
+					sampleInspection,
+					{ ...sampleInspection, id: "2", status: "aprovada" },
+				]}
+			/>,
+		);
+
+		await user.click(
+			screen.getByRole("button", { name: "Filtrar por Em aprovação (1)" }),
+		);
+
+		expect(mockPush).toHaveBeenCalledWith("/inspecoes?status=em_aprovacao", {
+			scroll: false,
+		});
 	});
 });
 

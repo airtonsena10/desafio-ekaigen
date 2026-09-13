@@ -128,3 +128,62 @@
 		@apply font-sans;
 	}
 }
+
+@layer utilities {
+	@keyframes shimmer {
+		100% {
+			transform: translateX(100%);
+		}
+	}
+
+	@keyframes fade-up {
+		from {
+			opacity: 0;
+			transform: translateY(8px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@keyframes progress-indeterminate {
+		0% {
+			transform: translateX(-100%);
+		}
+		100% {
+			transform: translateX(250%);
+		}
+	}
+
+	.skeleton-shimmer {
+		position: relative;
+		overflow: hidden;
+	}
+
+	.skeleton-shimmer::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+		transform: translateX(-100%);
+		background: linear-gradient(
+			90deg,
+			transparent,
+			oklch(1 0 0 / 0.45),
+			transparent
+		);
+		animation: shimmer 1.6s ease-in-out infinite;
+	}
+
+	.animate-fade-up {
+		animation: fade-up 0.35s ease-out both;
+	}
+
+	.animate-progress-indeterminate {
+		animation: progress-indeterminate 1.2s ease-in-out infinite;
+	}
+
+	.scrollbar-thin {
+		scrollbar-width: thin;
+	}
+}

@@ -25,7 +25,9 @@ export function SimulationPanel() {
 	const { restoreMock } = useInspections();
 	const [open, setOpen] = useState(false);
 	const [settings, setSettings] = useState(getSimulationSettings());
-	const [appliedSettings, setAppliedSettings] = useState(getSimulationSettings());
+	const [appliedSettings, setAppliedSettings] = useState(
+		getSimulationSettings(),
+	);
 
 	if (process.env.NODE_ENV === "production") {
 		return null;
@@ -69,8 +71,6 @@ export function SimulationPanel() {
 					</DialogDescription>
 				</DialogHeader>
 
-				
-
 				<div className="space-y-4">
 					<div className="space-y-2">
 						<Label htmlFor="delay-ms">Atraso (ms)</Label>
@@ -110,7 +110,7 @@ export function SimulationPanel() {
 					<Button size="sm" onClick={applySettings}>
 						Aplicar
 					</Button>
-					
+
 					<Button
 						size="sm"
 						variant="secondary"

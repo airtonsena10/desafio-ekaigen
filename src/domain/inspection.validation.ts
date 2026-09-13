@@ -131,70 +131,69 @@ export function validateRequiredMetadata(
 	return null;
 }
 
+function listRequiredMetadataFields(input: {
+	equipamento: string;
+	setor: string;
+	responsavel: string;
+	data: string;
+}): string[] {
+	const missing: string[] = [];
+
+	if (!input.equipamento.trim()) {
+		missing.push("equipamento");
+	}
+
+	if (!input.setor.trim()) {
+		missing.push("setor");
+	}
+
+	if (!input.responsavel.trim()) {
+		missing.push("responsável");
+	}
+
+	if (!input.data.trim()) {
+		missing.push("data");
+	}
+
+	return missing;
+}
+
+function formatMissingFieldsMessage(missing: string[]): string {
+	if (missing.length === 1) {
+		const field = missing[0];
+
+		if (field === "equipamento") {
+			return "Informe o equipamento.";
+		}
+
+		if (field === "setor") {
+			return "Informe o setor.";
+		}
+
+		if (field === "responsável") {
+			return "Informe o responsável.";
+		}
+
+		return "Informe a data.";
+	}
+
+	const last = missing.at(-1);
+	const rest = missing.slice(0, -1);
+
+	return `Preencha os campos: ${rest.join(", ")} e ${last}.`;
+}
+
 export function validateCreateInspectionInput(input: {
 	equipamento: string;
 	setor: string;
 	responsavel: string;
 	data: string;
 }): string | null {
-	return validateRequiredMetadata({
-		id: "",
-		protocolo: "",
-		equipamento: input.equipamento,
-		setor: input.setor,
-		responsavel: input.responsavel,
-		data: input.data,
-		status: "em_preenchimento",
-		checklist: [],
-		historico: [],
-		createdAt: "",
-		updatedAt: "",
-	});
-}
+	const missing = listRequiredMetadataFields(input);
 
-export function countByStatus(
-	inspections: Inspection[],
-): Record<InspectionStatus, number> {
-	return inspections.reduce(
-		(counts, inspection) => {
-			counts[inspection.status] += 1;
-			return counts;
-		},
-		{
-			em_preenchimento: 0,
-			em_aprovacao: 0,
-			aprovada: 0,
-			reprovada: 0,
-		},
-	);
-}
+	if (missing.length === 0) {
+		return null;
+	}
 
-export function filterInspections(
-	inspections: Inspection[],
-	query: string,
-	status: InspectionStatus | "all",
-): Inspection[] {
-	const normalizedQuery = query.trim().toLowerCase();
-
-	return inspections.filter((inspection) => {
-		const matchesStatus = status === "all" || inspection.status === status;
-		if (!matchesStatus) {
-			return false;
-		}
-
-		if (!normalizedQuery) {
-			return true;
-		}
-
-		const searchable = [
-			inspection.protocolo,
-			inspection.equipamento,
-			inspection.setor,
-			inspection.responsavel,
-		]
-			.join(" ")
-			.toLowerCase();
-
-		return searchable.includes(normalizedQuery);
-	});
+	return formatMissingFieldsMessage(missing);
 }
