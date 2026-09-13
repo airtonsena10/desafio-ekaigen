@@ -128,9 +128,9 @@ NEXT_PUBLIC_SIMULATE_FAILURE=false
 
 > Reinicie o servidor (`pnpm dev`) após alterar o `.env.local`.
 
-### Painel de simulação (somente desenvolvimento)
+### Painel de simulação
 
-Com `pnpm dev`, use o botão **Simulação** no header:
+Use o botão **Simulação** no header
 
 1. **Atraso (ms)** — simula latência de rede (ex.: `800` deixa skeletons visíveis)
 2. **Simular falha** — próximas operações lançam erro controlado
@@ -161,12 +161,13 @@ Dados inválidos no `localStorage` são descartados via validação runtime em `
 ```
 src/
 ├── app/                         # Rotas Next.js
+├── types/                       # Tipos compartilhados (`inspection.types.ts`, persistência, UI)
 ├── components/
 │   ├── inspections/             # Lista, Kanban, detalhe, checklist, shell compartilhado
 │   ├── layout/                  # Shell e header
 │   └── dev/                     # Painel de simulação
 ├── domain/                      # Regras de negócio puras (sem React)
-│   ├── inspection.types.ts      # Tipos e checklist seed
+│   ├── inspection.constants.ts  # Status, labels e checklist seed
 │   ├── inspection.transitions.ts# Máquina de estados
 │   ├── inspection.validation.ts # Validações de negócio
 │   ├── inspection.draft.ts      # Payload e serialização de rascunho
@@ -225,15 +226,13 @@ Regras de transição, validação de checklist e permissões por papel ficam em
 - Papel do usuário **não é persistido** (reinicia como Inspetor ao recarregar)
 - Simulação de falha é **global** — afeta a próxima operação, não endpoints individuais
 - Sem paginação; volume pensado para dezenas de inspeções
-- Painel de simulação **oculto em produção** (`NODE_ENV === "production"`)
-
 ## Deploy (Vercel)
 
 1. Importe o repositório na [Vercel](https://vercel.com)
 2. Framework preset: **Next.js**
 3. Build command: `pnpm build`
 4. Install command: `pnpm install`
-5. (Opcional) Configure as variáveis de simulação — em produção o painel dev não aparece
+5. (Opcional) Configure as variáveis de simulação
 
 ## Scripts disponíveis
 

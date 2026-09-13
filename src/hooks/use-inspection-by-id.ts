@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Inspection } from "@/domain/inspection.types";
+import type { Inspection } from "@/types/inspection.types";
 import { useInspections } from "@/providers/inspection-provider";
 
 interface UseInspectionByIdResult {

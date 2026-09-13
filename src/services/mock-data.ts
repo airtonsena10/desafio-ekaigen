@@ -1,5 +1,5 @@
-import type { Inspection } from "../domain/inspection.types";
-import { createEmptyChecklist } from "../domain/inspection.types";
+import { createEmptyChecklist } from "@/domain/inspection.constants";
+import type { Inspection } from "@/types/inspection.types";
 
 function createHistory(
 	id: string,

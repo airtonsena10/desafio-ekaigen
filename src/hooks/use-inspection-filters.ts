@@ -2,20 +2,8 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
-import type { InspectionStatus } from "@/domain/inspection.types";
-import { INSPECTION_STATUSES } from "@/domain/inspection.types";
-
-function parseStatus(value: string | null): InspectionStatus | "all" {
-	if (!value) {
-		return "all";
-	}
-
-	if (INSPECTION_STATUSES.includes(value as InspectionStatus)) {
-		return value as InspectionStatus;
-	}
-
-	return "all";
-}
+import { parseInspectionFilterStatus } from "@/domain/inspection.queries";
+import type { InspectionStatus } from "@/types/inspection.types";
 
 function getFilterBasePath(pathname: string): string {
 	if (pathname === "/inspecoes/kanban") {
@@ -31,7 +19,7 @@ export function useInspectionFilters() {
 	const searchParams = useSearchParams();
 
 	const query = searchParams.get("q") ?? "";
-	const status = parseStatus(searchParams.get("status"));
+	const status = parseInspectionFilterStatus(searchParams.get("status"));
 	const basePath = getFilterBasePath(pathname);
 
 	const updateParams = useCallback(

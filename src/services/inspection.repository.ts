@@ -1,31 +1,27 @@
+import { createEmptyChecklist } from "@/domain/inspection.constants";
 import {
 	applyInspectionAction,
 	generateProtocol,
-} from "../domain/inspection.transitions";
-import type {
-	Inspection,
-	InspectionAction,
-	InspectionDraftUpdate,
-} from "../domain/inspection.types";
-import { createEmptyChecklist } from "../domain/inspection.types";
-import { validateCreateInspectionInput } from "../domain/inspection.validation";
-import { err, ok, type Result } from "../domain/result";
+} from "@/domain/inspection.transitions";
+import { validateCreateInspectionInput } from "@/domain/inspection.validation";
+import { err, ok } from "@/domain/result";
 import { createSeedState } from "./mock-data";
 import {
 	clearPersistedState,
 	createEmptyState,
-	type PersistedState,
 	readPersistedState,
 	writePersistedState,
 } from "./persistence";
 import { simulateAsyncOperation } from "./simulation";
-
-export interface CreateInspectionInput {
-	equipamento: string;
-	setor: string;
-	responsavel: string;
-	data: string;
-}
+import type {
+	CreateInspectionInput,
+	Inspection,
+	InspectionAction,
+	InspectionDraftUpdate,
+	PersistedState,
+	Result,
+	UserRole,
+} from "@/types";
 
 function ensureState(): PersistedState {
 	const persisted = readPersistedState();
@@ -124,8 +120,9 @@ export async function createInspection(
 export async function saveInspectionDraft(
 	id: string,
 	updates: InspectionDraftUpdate,
+	role: UserRole = "inspetor",
 ): Promise<Result<Inspection>> {
-	return applyAction(id, { type: "save_draft", role: "inspetor", updates });
+	return applyAction(id, { type: "save_draft", role, updates });
 }
 
 export async function performInspectionAction(

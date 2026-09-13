@@ -1,4 +1,4 @@
-import type { HistoryEntry } from "@/domain/inspection.types";
+import type { HistoryEntry } from "@/types/inspection.types";
 import { cn } from "@/lib/utils";
 
 export function HistoryTimeline({ entries }: { entries: HistoryEntry[] }) {

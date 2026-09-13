@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createEmptyChecklist } from "@/domain/inspection.types";
+import { createEmptyChecklist } from "@/domain/inspection.constants";
 import { parsePersistedState } from "@/services/persistence.schema";
 
 function buildValidState() {

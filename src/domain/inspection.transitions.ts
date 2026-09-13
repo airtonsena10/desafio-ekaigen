@@ -2,7 +2,7 @@ import type {
 	Inspection,
 	InspectionAction,
 	UserRole,
-} from "./inspection.types";
+} from "@/types/inspection.types";
 import {
 	validateApprove,
 	validateDraftUpdate,

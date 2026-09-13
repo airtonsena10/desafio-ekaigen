@@ -25,17 +25,9 @@ export function SimulationPanel() {
 	const { restoreMock } = useInspections();
 	const [open, setOpen] = useState(false);
 	const [settings, setSettings] = useState(getSimulationSettings());
-	const [appliedSettings, setAppliedSettings] = useState(
-		getSimulationSettings(),
-	);
-
-	if (process.env.NODE_ENV === "production") {
-		return null;
-	}
 
 	const applySettings = () => {
 		const next = updateSimulationSettings(settings);
-		setAppliedSettings(next);
 		toast.success(
 			`Simulação aplicada: atraso de ${next.delayMs}ms${next.shouldFail ? " e falha ativa" : ""}.`,
 		);
@@ -55,7 +47,6 @@ export function SimulationPanel() {
 				setOpen(nextOpen);
 				if (nextOpen) {
 					setSettings(getSimulationSettings());
-					setAppliedSettings(getSimulationSettings());
 				}
 			}}
 		>
@@ -117,7 +108,6 @@ export function SimulationPanel() {
 						onClick={() => {
 							const reset = resetSimulationSettings();
 							setSettings(reset);
-							setAppliedSettings(reset);
 							toast.message("Simulação resetada para variáveis de ambiente.");
 						}}
 					>

@@ -1,7 +1,7 @@
 import { renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import type { Inspection } from "@/domain/inspection.types";
-import { createEmptyChecklist } from "@/domain/inspection.types";
+import { createEmptyChecklist } from "@/domain/inspection.constants";
+import type { Inspection } from "@/types/inspection.types";
 import { useSelectedInspection } from "@/hooks/use-selected-inspection";
 
 const inspection: Inspection = {

@@ -10,15 +10,8 @@ import {
 	useRef,
 	useState,
 } from "react";
-import type {
-	Inspection,
-	InspectionAction,
-	InspectionDraftUpdate,
-} from "@/domain/inspection.types";
-import type { Result } from "@/domain/result";
 import { toErrorMessage } from "@/lib/error-message";
 import {
-	type CreateInspectionInput,
 	createInspection,
 	getInspection,
 	listInspections,
@@ -26,6 +19,14 @@ import {
 	restoreMockData,
 	saveInspectionDraft,
 } from "@/services/inspection.repository";
+import type {
+	CreateInspectionInput,
+	Inspection,
+	InspectionAction,
+	InspectionDraftUpdate,
+	Result,
+	UserRole,
+} from "@/types";
 
 interface InspectionContextValue {
 	inspections: Inspection[];
@@ -41,6 +42,7 @@ interface InspectionContextValue {
 	saveDraft: (
 		id: string,
 		updates: InspectionDraftUpdate,
+		role?: UserRole,
 	) => Promise<Result<Inspection>>;
 	executeAction: (
 		id: string,
@@ -81,54 +83,66 @@ export function InspectionProvider({ children }: { children: ReactNode }) {
 	const inspectionsRef = useRef(inspections);
 	inspectionsRef.current = inspections;
 
+	const runWithLoadingState = useCallback(
+		async (operation: () => Promise<void>) => {
+			const isInitialLoad = inspectionsRef.current.length === 0;
+
+			if (isInitialLoad) {
+				setLoading(true);
+			} else {
+				setRefreshing(true);
+			}
+
+			setError(null);
+
+			try {
+				await operation();
+			} finally {
+				setLoading(false);
+				setRefreshing(false);
+			}
+		},
+		[],
+	);
+
 	const refresh = useCallback(async () => {
-		const isInitialLoad = inspectionsRef.current.length === 0;
-
-		if (isInitialLoad) {
-			setLoading(true);
-		} else {
-			setRefreshing(true);
-		}
-
-		setError(null);
-
-		try {
-			const data = await listInspections();
-			setInspections(data);
-		} catch (refreshError) {
-			setError(
-				toErrorMessage(refreshError, "Não foi possível carregar as inspeções."),
-			);
-		} finally {
-			setLoading(false);
-			setRefreshing(false);
-		}
-	}, []);
+		await runWithLoadingState(async () => {
+			try {
+				const data = await listInspections();
+				setInspections(data);
+			} catch (refreshError) {
+				setError(
+					toErrorMessage(refreshError, "Não foi possível carregar as inspeções."),
+				);
+			}
+		});
+	}, [runWithLoadingState]);
 
 	useEffect(() => {
 		void refresh();
 	}, [refresh]);
 
-	const createNewInspection = useCallback(
-		async (input: CreateInspectionInput) => {
-			const result = await runRepositoryOperation(
-				() => createInspection(input),
-				"Não foi possível criar a inspeção.",
-			);
+	const createNewInspection = useCallback(async (input: CreateInspectionInput) => {
+		const result = await runRepositoryOperation(
+			() => createInspection(input),
+			"Não foi possível criar a inspeção.",
+		);
 
-			if (result.ok) {
-				await refresh();
-			}
+		if (result.ok) {
+			setInspections((current) => [result.value, ...current]);
+		}
 
-			return result;
-		},
-		[refresh],
-	);
+		return result;
+	}, []);
 
 	const saveDraft = useCallback(
-		async (id: string, updates: InspectionDraftUpdate) => {
+		async (
+			id: string,
+			updates: InspectionDraftUpdate,
+			role: UserRole = "inspetor",
+		) => {
 			const result = await runRepositoryOperation(
-				() => saveInspectionDraft(id, updates),
+				() => saveInspectionDraft(id, updates, role),
 				"Não foi possível salvar o rascunho.",
 			);
 
@@ -198,32 +212,21 @@ export function InspectionProvider({ children }: { children: ReactNode }) {
 	}, []);
 
 	const restoreMock = useCallback(async () => {
-		const isInitialLoad = inspectionsRef.current.length === 0;
-
-		if (isInitialLoad) {
-			setLoading(true);
-		} else {
-			setRefreshing(true);
-		}
-
-		setError(null);
-
-		try {
-			const data = await restoreMockData();
-			setInspections(data);
-			setSelectedId(null);
-		} catch (restoreError) {
-			setError(
-				toErrorMessage(
-					restoreError,
-					"Não foi possível restaurar os dados mock.",
-				),
-			);
-		} finally {
-			setLoading(false);
-			setRefreshing(false);
-		}
-	}, []);
+		await runWithLoadingState(async () => {
+			try {
+				const data = await restoreMockData();
+				setInspections(data);
+				setSelectedId(null);
+			} catch (restoreError) {
+				setError(
+					toErrorMessage(
+						restoreError,
+						"Não foi possível restaurar os dados mock.",
+					),
+				);
+			}
+		});
+	}, [runWithLoadingState]);
 
 	const value = useMemo(
 		() => ({

@@ -1,7 +1,7 @@
 "use client";
 
 import { ActionButton } from "@/components/inspections/action-button";
-import type { ReviewDecision } from "@/hooks/use-inspection-form";
+import type { ReviewDecision } from "@/types";
 
 interface InspectionActionFooterProps {
 	submitting: boolean;

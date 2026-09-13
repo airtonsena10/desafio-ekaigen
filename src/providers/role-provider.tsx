@@ -8,7 +8,7 @@ import {
 	useMemo,
 	useState,
 } from "react";
-import type { UserRole } from "@/domain/inspection.types";
+import type { UserRole } from "@/types/inspection.types";
 
 interface RoleContextValue {
 	role: UserRole;

@@ -8,7 +8,7 @@ import { InspectionRejectionAlert } from "@/components/inspections/inspection-re
 import { InspectionReviewPanel } from "@/components/inspections/inspection-review-panel";
 import { StatusBadge } from "@/components/inspections/status-badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Inspection } from "@/domain/inspection.types";
+import type { Inspection } from "@/types";
 import { useInspectionForm } from "@/hooks/use-inspection-form";
 import { cn } from "@/lib/utils";
 
@@ -32,8 +32,8 @@ export function InspectionDetail({
 		motivoReprovacao,
 		setMotivoReprovacao,
 		updateField,
-		scheduleAutoSave,
-		handleAutoSave,
+		queueAutoSave,
+		saveDraftOnBlur,
 		handleSaveDraft,
 		handleSubmitForReview,
 		handleConfirmReview,
@@ -69,7 +69,7 @@ export function InspectionDetail({
 					submitting={submitting}
 					showTitle={!isModal}
 					onFieldChange={updateField}
-					onFieldBlur={handleAutoSave}
+					onFieldBlur={saveDraftOnBlur}
 				/>
 			</header>
 
@@ -91,7 +91,7 @@ export function InspectionDetail({
 						items={formState.checklist}
 						disabled={!editable || submitting}
 						onChange={(checklist) => updateField("checklist", checklist)}
-						onAutoSave={scheduleAutoSave}
+						onAutoSave={queueAutoSave}
 					/>
 
 					{showReviewerActions ? (

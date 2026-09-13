@@ -3,8 +3,9 @@
 import { CheckCircle2, XCircle } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { ChecklistItem } from "@/domain/inspection.types";
+import { countAnsweredChecklistItems } from "@/domain/inspection.permissions";
 import { cn } from "@/lib/utils";
+import type { ChecklistItem } from "@/types";
 
 interface ChecklistFormProps {
 	items: ChecklistItem[];
@@ -91,7 +92,7 @@ export function ChecklistForm({
 	onChange,
 	onAutoSave,
 }: ChecklistFormProps) {
-	const answeredCount = items.filter((item) => item.resposta).length;
+	const answeredCount = countAnsweredChecklistItems(items);
 	const progress = items.length > 0 ? (answeredCount / items.length) * 100 : 0;
 
 	const updateItem = (

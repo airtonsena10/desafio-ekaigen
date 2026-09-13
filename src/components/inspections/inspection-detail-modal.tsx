@@ -8,7 +8,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import type { Inspection } from "@/domain/inspection.types";
+import type { Inspection } from "@/types/inspection.types";
 
 interface InspectionDetailModalProps {
 	open: boolean;

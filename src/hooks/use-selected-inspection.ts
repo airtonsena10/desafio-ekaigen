@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import type { Inspection } from "@/domain/inspection.types";
+import type { Inspection } from "@/types/inspection.types";
 
 interface UseSelectedInspectionOptions {
 	selectedId: string | null;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import type { Inspection } from "@/domain/inspection.types";
+import type { Inspection } from "@/types/inspection.types";
 import { useSelectedInspection } from "@/hooks/use-selected-inspection";
 import { useInspections } from "@/providers/inspection-provider";
 

@@ -1,14 +1,7 @@
-import type { InspectionStatus } from "@/domain/inspection.types";
+import type { InspectionStatus } from "@/types/inspection.types";
+import type { StatusTheme } from "@/types/ui";
 
-export interface StatusTheme {
-	badge: string;
-	column: string;
-	dot: string;
-	ring: string;
-	label: string;
-	accent: string;
-	counter: string;
-}
+export type { StatusTheme } from "@/types/ui";
 
 export const STATUS_THEME: Record<InspectionStatus, StatusTheme> = {
 	em_preenchimento: {

@@ -1,4 +1,4 @@
-import type { Inspection, InspectionDraftUpdate } from "./inspection.types";
+import type { Inspection, InspectionDraftUpdate } from "@/types/inspection.types";
 
 export function getDraftPayload(inspection: Inspection): InspectionDraftUpdate {
 	return {

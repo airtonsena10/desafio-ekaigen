@@ -1,17 +1,21 @@
-import type { Inspection, InspectionStatus } from "./inspection.types";
-import { INSPECTION_STATUSES } from "./inspection.types";
+import {
+	INSPECTION_STATUSES,
+	isInspectionStatus,
+} from "@/domain/inspection.constants";
+import type { Inspection, InspectionStatus } from "@/types/inspection.types";
 
 export function parseInspectionStatus(value: string): InspectionStatus | null {
-	if (
-		value === "em_preenchimento" ||
-		value === "em_aprovacao" ||
-		value === "aprovada" ||
-		value === "reprovada"
-	) {
-		return value;
+	return isInspectionStatus(value) ? value : null;
+}
+
+export function parseInspectionFilterStatus(
+	value: string | null,
+): InspectionStatus | "all" {
+	if (!value || value === "all") {
+		return "all";
 	}
 
-	return null;
+	return parseInspectionStatus(value) ?? "all";
 }
 
 export function countByStatus(

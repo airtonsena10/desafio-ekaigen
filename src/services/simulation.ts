@@ -1,7 +1,6 @@
-export interface SimulationSettings {
-	delayMs: number;
-	shouldFail: boolean;
-}
+import type { SimulationSettings } from "@/types/simulation";
+
+export type { SimulationSettings } from "@/types/simulation";
 
 const DEFAULT_DELAY_MS = 300;
 

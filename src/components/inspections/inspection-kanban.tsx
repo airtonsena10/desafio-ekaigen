@@ -3,20 +3,26 @@
 import { useEffect, useMemo, useState } from "react";
 import { KanbanColumnsSkeleton } from "@/components/inspections/inspection-cards-skeleton";
 import { InspectionSummaryCard } from "@/components/inspections/inspection-summary-card";
-import { InspectionViewShell } from "@/components/inspections/inspection-view-shell";
+import {
+	InspectionViewShell,
+	type InspectionViewFilters,
+} from "@/components/inspections/inspection-view-shell";
 import { STATUS_THEME } from "@/components/inspections/status-theme";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+	INSPECTION_STATUSES,
+	STATUS_LABELS,
+} from "@/domain/inspection.constants";
+import { getInspectionCardAction } from "@/domain/inspection.permissions";
+import {
 	groupInspectionsByStatus,
 	parseInspectionStatus,
 } from "@/domain/inspection.queries";
-import type { Inspection, InspectionStatus } from "@/domain/inspection.types";
-import { INSPECTION_STATUSES, STATUS_LABELS } from "@/domain/inspection.types";
-import { useFilteredInspections } from "@/hooks/use-filtered-inspections";
 import { useInspectionModal } from "@/hooks/use-inspection-modal";
 import { cn } from "@/lib/utils";
 import { useRole } from "@/providers/role-provider";
+import type { Inspection, InspectionStatus } from "@/types";
 
 function KanbanCard({
 	inspection,
@@ -26,15 +32,12 @@ function KanbanCard({
 	onOpen: (id: string) => void;
 }) {
 	const { role } = useRole();
-	const actionLabel =
-		role === "revisor" && inspection.status === "em_aprovacao"
-			? "Revisar"
-			: "Abrir";
+	const action = getInspectionCardAction(inspection, role);
 
 	return (
 		<InspectionSummaryCard
 			inspection={inspection}
-			actionLabel={actionLabel}
+			action={action}
 			onOpen={onOpen}
 			variant="kanban"
 			className="hover:translate-y-0"
@@ -92,20 +95,18 @@ function KanbanColumn({
 	);
 }
 
-export function InspectionKanbanView() {
-	const { filteredInspections, status, setStatus } = useFilteredInspections();
-	const {
-		selectedInspection,
-		modalOpen,
-		openInspectionById,
-		handleModalOpenChange,
-	} = useInspectionModal();
-
+function KanbanBoard({
+	filters,
+	onOpen,
+}: {
+	filters: InspectionViewFilters;
+	onOpen: (id: string) => void;
+}) {
+	const { filteredInspections, status, setStatus } = filters;
 	const grouped = useMemo(
 		() => groupInspectionsByStatus(filteredInspections),
 		[filteredInspections],
 	);
-
 	const [mobileTab, setMobileTab] =
 		useState<InspectionStatus>("em_preenchimento");
 
@@ -115,19 +116,8 @@ export function InspectionKanbanView() {
 		}
 	}, [status]);
 
-	const visibleCount =
-		status === "all" ? grouped[mobileTab].length : filteredInspections.length;
-
 	return (
-		<InspectionViewShell
-			title="Kanban de inspeções"
-			description="Acompanhe cada etapa do fluxo com cards organizados por status."
-			count={visibleCount}
-			loadingFallback={<KanbanColumnsSkeleton />}
-			selectedInspection={selectedInspection}
-			modalOpen={modalOpen}
-			onModalOpenChange={handleModalOpenChange}
-		>
+		<>
 			<div className="xl:hidden">
 				<Tabs
 					value={mobileTab}
@@ -181,10 +171,7 @@ export function InspectionKanbanView() {
 											className="animate-fade-up"
 											style={{ animationDelay: `${index * 40}ms` }}
 										>
-											<KanbanCard
-												inspection={inspection}
-												onOpen={openInspectionById}
-											/>
+											<KanbanCard inspection={inspection} onOpen={onOpen} />
 										</div>
 									))
 								)}
@@ -200,11 +187,35 @@ export function InspectionKanbanView() {
 						<KanbanColumn
 							columnStatus={columnStatus}
 							items={grouped[columnStatus]}
-							onOpen={openInspectionById}
+							onOpen={onOpen}
 						/>
 					</div>
 				))}
 			</div>
+		</>
+	);
+}
+
+export function InspectionKanbanView() {
+	const {
+		selectedInspection,
+		modalOpen,
+		openInspectionById,
+		handleModalOpenChange,
+	} = useInspectionModal();
+
+	return (
+		<InspectionViewShell
+			title="Kanban de inspeções"
+			description="Acompanhe cada etapa do fluxo com cards organizados por status."
+			loadingFallback={<KanbanColumnsSkeleton />}
+			selectedInspection={selectedInspection}
+			modalOpen={modalOpen}
+			onModalOpenChange={handleModalOpenChange}
+		>
+			{(filters) => (
+				<KanbanBoard filters={filters} onOpen={openInspectionById} />
+			)}
 		</InspectionViewShell>
 	);
 }

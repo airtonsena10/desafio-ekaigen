@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { Inspection } from "@/domain/inspection.types";
 import { validateCreateInspectionInput } from "@/domain/inspection.validation";
 import { useInspections } from "@/providers/inspection-provider";
+import type { Inspection } from "@/types";
 
 interface CreateInspectionFormProps {
 	onCreated: (inspection: Inspection) => void;
@@ -31,17 +31,6 @@ function getInitialFormState(): CreateInspectionFormState {
 	};
 }
 
-function parseCreateInspectionForm(
-	formData: FormData,
-): CreateInspectionFormState {
-	return {
-		equipamento: String(formData.get("equipamento") ?? "").trim(),
-		setor: String(formData.get("setor") ?? "").trim(),
-		responsavel: String(formData.get("responsavel") ?? "").trim(),
-		data: String(formData.get("data") ?? ""),
-	};
-}
-
 export function CreateInspectionForm({ onCreated }: CreateInspectionFormProps) {
 	const { createNewInspection } = useInspections();
 	const [submitting, setSubmitting] = useState(false);
@@ -51,9 +40,12 @@ export function CreateInspectionForm({ onCreated }: CreateInspectionFormProps) {
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 
-		const payload = parseCreateInspectionForm(
-			new FormData(event.currentTarget),
-		);
+		const payload = {
+			equipamento: form.equipamento.trim(),
+			setor: form.setor.trim(),
+			responsavel: form.responsavel.trim(),
+			data: form.data,
+		};
 		const validationError = validateCreateInspectionInput(payload);
 
 		if (validationError) {
@@ -73,7 +65,6 @@ export function CreateInspectionForm({ onCreated }: CreateInspectionFormProps) {
 		toast.success("Inspeção criada.");
 		onCreated(result.value);
 		setForm(getInitialFormState());
-		event.currentTarget.reset();
 	};
 
 	return (
@@ -103,7 +94,6 @@ export function CreateInspectionForm({ onCreated }: CreateInspectionFormProps) {
 									equipamento: event.target.value,
 								}))
 							}
-							required
 						/>
 					</div>
 					<div className="space-y-2">
@@ -119,7 +109,6 @@ export function CreateInspectionForm({ onCreated }: CreateInspectionFormProps) {
 									setor: event.target.value,
 								}))
 							}
-							required
 						/>
 					</div>
 					<div className="space-y-2">
@@ -135,7 +124,6 @@ export function CreateInspectionForm({ onCreated }: CreateInspectionFormProps) {
 									responsavel: event.target.value,
 								}))
 							}
-							required
 						/>
 					</div>
 					<div className="space-y-2">
@@ -148,7 +136,6 @@ export function CreateInspectionForm({ onCreated }: CreateInspectionFormProps) {
 							onChange={(event) =>
 								setForm((current) => ({ ...current, data: event.target.value }))
 							}
-							required
 						/>
 					</div>
 					<div className="md:col-span-2">

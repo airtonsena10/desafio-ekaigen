@@ -1,7 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Inspection } from "@/domain/inspection.types";
-import { createEmptyChecklist } from "@/domain/inspection.types";
+import { createEmptyChecklist } from "@/domain/inspection.constants";
+import type { Inspection } from "@/types/inspection.types";
 
 const mockSaveDraft = vi.fn();
 const mockExecuteAction = vi.fn();
@@ -71,12 +71,13 @@ describe("useInspectionForm", () => {
 		});
 
 		await act(async () => {
-			await result.current.handleAutoSave();
+			await result.current.saveDraftOnBlur();
 		});
 
 		expect(mockSaveDraft).toHaveBeenCalledWith(
 			"ins-1",
 			expect.objectContaining({ equipamento: "Bomba" }),
+			"inspetor",
 		);
 		expect(result.current.formState.equipamento).toBe("Bomba");
 	});

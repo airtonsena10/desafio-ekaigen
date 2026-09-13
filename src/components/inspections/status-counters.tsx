@@ -2,8 +2,11 @@
 
 import { STATUS_THEME } from "@/components/inspections/status-theme";
 import { countByStatus } from "@/domain/inspection.queries";
-import type { Inspection, InspectionStatus } from "@/domain/inspection.types";
-import { INSPECTION_STATUSES, STATUS_LABELS } from "@/domain/inspection.types";
+import {
+	INSPECTION_STATUSES,
+	STATUS_LABELS,
+} from "@/domain/inspection.constants";
+import type { Inspection, InspectionStatus } from "@/types/inspection.types";
 import { useInspectionFilters } from "@/hooks/use-inspection-filters";
 import { cn } from "@/lib/utils";
 

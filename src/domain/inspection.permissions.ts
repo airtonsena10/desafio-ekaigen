@@ -1,12 +1,9 @@
-import type { Inspection, UserRole } from "./inspection.types";
+import type { ChecklistItem, Inspection, UserRole } from "@/types/inspection.types";
+import type { InspectionActionVisibility } from "@/types/permissions";
 import { canEditInspection } from "./inspection.validation";
 
-export interface InspectionActionVisibility {
-	showInspectorActions: boolean;
-	showResubmitAction: boolean;
-	showReviewerActions: boolean;
-	hasFooterActions: boolean;
-}
+export type InspectionCardAction = "open" | "review";
+export type InspectionCardVariant = "list" | "kanban";
 
 export function getInspectionActionVisibility(
 	inspection: Inspection,
@@ -30,6 +27,31 @@ export function getInspectionActionVisibility(
 	};
 }
 
-export function countAnsweredChecklistItems(inspection: Inspection): number {
-	return inspection.checklist.filter((item) => item.resposta).length;
+export function countAnsweredChecklistItems(
+	source: Inspection | ChecklistItem[],
+): number {
+	const checklist = Array.isArray(source) ? source : source.checklist;
+	return checklist.filter((item) => item.resposta).length;
+}
+
+export function getInspectionCardAction(
+	inspection: Inspection,
+	role: UserRole,
+): InspectionCardAction {
+	if (role === "revisor" && inspection.status === "em_aprovacao") {
+		return "review";
+	}
+
+	return "open";
+}
+
+export function getInspectionCardActionLabel(
+	action: InspectionCardAction,
+	variant: InspectionCardVariant,
+): string {
+	if (action === "review") {
+		return "Revisar";
+	}
+
+	return variant === "list" ? "Ver detalhes" : "Abrir";
 }

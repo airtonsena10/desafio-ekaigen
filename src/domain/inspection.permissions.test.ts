@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
 	countAnsweredChecklistItems,
 	getInspectionActionVisibility,
+	getInspectionCardAction,
+	getInspectionCardActionLabel,
 } from "@/domain/inspection.permissions";
-import type { Inspection } from "@/domain/inspection.types";
-import { createEmptyChecklist } from "@/domain/inspection.types";
+import { createEmptyChecklist } from "@/domain/inspection.constants";
+import type { Inspection } from "@/types/inspection.types";
 
 function buildInspection(overrides: Partial<Inspection> = {}): Inspection {
 	return {
@@ -53,6 +55,34 @@ describe("getInspectionActionVisibility", () => {
 
 		expect(visibility.showResubmitAction).toBe(true);
 		expect(visibility.hasFooterActions).toBe(true);
+	});
+});
+
+describe("getInspectionCardAction", () => {
+	it("retorna review para revisor em aprovação", () => {
+		expect(
+			getInspectionCardAction(
+				buildInspection({ status: "em_aprovacao" }),
+				"revisor",
+			),
+		).toBe("review");
+	});
+
+	it("retorna open para inspetor", () => {
+		expect(
+			getInspectionCardAction(
+				buildInspection({ status: "em_aprovacao" }),
+				"inspetor",
+			),
+		).toBe("open");
+	});
+});
+
+describe("getInspectionCardActionLabel", () => {
+	it("usa labels por variante", () => {
+		expect(getInspectionCardActionLabel("open", "list")).toBe("Ver detalhes");
+		expect(getInspectionCardActionLabel("open", "kanban")).toBe("Abrir");
+		expect(getInspectionCardActionLabel("review", "kanban")).toBe("Revisar");
 	});
 });
 

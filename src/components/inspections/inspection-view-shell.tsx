@@ -5,26 +5,32 @@ import { InspectionDetailModal } from "@/components/inspections/inspection-detai
 import { InspectionViewToolbar } from "@/components/inspections/inspection-view-toolbar";
 import { NetworkErrorState } from "@/components/inspections/network-error-state";
 import { SearchFilters } from "@/components/inspections/search-filters";
-import type { Inspection } from "@/domain/inspection.types";
 import { useFilteredInspections } from "@/hooks/use-filtered-inspections";
 import { useInspections } from "@/providers/inspection-provider";
+import type { Inspection, InspectionStatus } from "@/types";
+
+export interface InspectionViewFilters {
+	filteredInspections: Inspection[];
+	query: string;
+	status: InspectionStatus | "all";
+	setQuery: (value: string) => void;
+	setStatus: (value: InspectionStatus | "all") => void;
+}
 
 interface InspectionViewShellProps {
 	title: string;
 	description: string;
-	count: number;
 	loadingFallback: ReactNode;
 	selectedInspection: Inspection | null;
 	modalOpen: boolean;
 	onModalOpenChange: (open: boolean) => void;
 	beforeToolbar?: ReactNode;
-	children: ReactNode;
+	children: (filters: InspectionViewFilters) => ReactNode;
 }
 
 export function InspectionViewShell({
 	title,
 	description,
-	count,
 	loadingFallback,
 	selectedInspection,
 	modalOpen,
@@ -33,7 +39,7 @@ export function InspectionViewShell({
 	children,
 }: InspectionViewShellProps) {
 	const { loading, refreshing, error, refresh } = useInspections();
-	const { query, status, setQuery, setStatus } = useFilteredInspections();
+	const filters = useFilteredInspections();
 
 	return (
 		<div className="space-y-5">
@@ -42,13 +48,13 @@ export function InspectionViewShell({
 			<InspectionViewToolbar
 				title={title}
 				description={description}
-				count={count}
+				count={filters.filteredInspections.length}
 			>
 				<SearchFilters
-					query={query}
-					status={status}
-					onQueryChange={setQuery}
-					onStatusChange={setStatus}
+					query={filters.query}
+					status={filters.status}
+					onQueryChange={filters.setQuery}
+					onStatusChange={filters.setStatus}
 				/>
 			</InspectionViewToolbar>
 
@@ -62,7 +68,7 @@ export function InspectionViewShell({
 				/>
 			) : null}
 
-			{!loading && !error ? children : null}
+			{!loading && !error ? children(filters) : null}
 
 			<InspectionDetailModal
 				open={modalOpen}

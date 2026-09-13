@@ -4,9 +4,16 @@ import type {
 	InspectionDraftUpdate,
 	InspectionStatus,
 	UserRole,
-} from "./inspection.types";
+} from "@/types/inspection.types";
 
 const MIN_REJECTION_REASON_LENGTH = 10;
+
+export interface MetadataFields {
+	equipamento: string;
+	setor: string;
+	responsavel: string;
+	data: string;
+}
 
 export function canEditInspection(status: InspectionStatus): boolean {
 	return status === "em_preenchimento" || status === "reprovada";
@@ -109,34 +116,7 @@ export function validateResubmit(
 	return validateChecklistComplete(inspection.checklist);
 }
 
-export function validateRequiredMetadata(
-	inspection: Inspection,
-): string | null {
-	if (!inspection.equipamento.trim()) {
-		return "Informe o equipamento.";
-	}
-
-	if (!inspection.setor.trim()) {
-		return "Informe o setor.";
-	}
-
-	if (!inspection.responsavel.trim()) {
-		return "Informe o responsável.";
-	}
-
-	if (!inspection.data.trim()) {
-		return "Informe a data.";
-	}
-
-	return null;
-}
-
-function listRequiredMetadataFields(input: {
-	equipamento: string;
-	setor: string;
-	responsavel: string;
-	data: string;
-}): string[] {
+function listMissingMetadataFields(input: MetadataFields): string[] {
 	const missing: string[] = [];
 
 	if (!input.equipamento.trim()) {
@@ -158,7 +138,7 @@ function listRequiredMetadataFields(input: {
 	return missing;
 }
 
-function formatMissingFieldsMessage(missing: string[]): string {
+function formatMissingMetadataMessage(missing: string[]): string {
 	if (missing.length === 1) {
 		const field = missing[0];
 
@@ -183,17 +163,35 @@ function formatMissingFieldsMessage(missing: string[]): string {
 	return `Preencha os campos: ${rest.join(", ")} e ${last}.`;
 }
 
-export function validateCreateInspectionInput(input: {
-	equipamento: string;
-	setor: string;
-	responsavel: string;
-	data: string;
-}): string | null {
-	const missing = listRequiredMetadataFields(input);
+function getMetadataFieldsFromInspection(
+	inspection: Inspection,
+): MetadataFields {
+	return {
+		equipamento: inspection.equipamento,
+		setor: inspection.setor,
+		responsavel: inspection.responsavel,
+		data: inspection.data,
+	};
+}
+
+export function validateRequiredMetadata(
+	inspection: Inspection,
+): string | null {
+	return validateMetadataFields(getMetadataFieldsFromInspection(inspection));
+}
+
+export function validateCreateInspectionInput(
+	input: MetadataFields,
+): string | null {
+	return validateMetadataFields(input);
+}
+
+function validateMetadataFields(input: MetadataFields): string | null {
+	const missing = listMissingMetadataFields(input);
 
 	if (missing.length === 0) {
 		return null;
 	}
 
-	return formatMissingFieldsMessage(missing);
+	return formatMissingMetadataMessage(missing);
 }

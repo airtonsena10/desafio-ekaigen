@@ -3,8 +3,8 @@ import {
 	getDraftPayload,
 	serializeDraftPayload,
 } from "@/domain/inspection.draft";
-import type { Inspection } from "@/domain/inspection.types";
-import { createEmptyChecklist } from "@/domain/inspection.types";
+import { createEmptyChecklist } from "@/domain/inspection.constants";
+import type { Inspection } from "@/types/inspection.types";
 
 function buildInspection(overrides: Partial<Inspection> = {}): Inspection {
 	return {

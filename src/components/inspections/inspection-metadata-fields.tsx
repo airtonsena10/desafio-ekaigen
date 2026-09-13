@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { Inspection } from "@/domain/inspection.types";
+import type { Inspection } from "@/types/inspection.types";
 import { formatInspectionDate } from "@/lib/format-date";
 
 interface MetadataFieldProps {

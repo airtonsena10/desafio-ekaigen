@@ -4,7 +4,7 @@ import { CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import type { ReviewDecision } from "@/hooks/use-inspection-form";
+import type { ReviewDecision } from "@/types";
 import { cn } from "@/lib/utils";
 
 interface InspectionReviewPanelProps {

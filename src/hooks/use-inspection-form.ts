@@ -10,13 +10,13 @@ import {
 	countAnsweredChecklistItems,
 	getInspectionActionVisibility,
 } from "@/domain/inspection.permissions";
-import type { Inspection, InspectionAction } from "@/domain/inspection.types";
 import { canEditInspection } from "@/domain/inspection.validation";
 import { flushFocusedField } from "@/lib/flush-focused-field";
 import { useInspections } from "@/providers/inspection-provider";
 import { useRole } from "@/providers/role-provider";
+import type { Inspection, InspectionAction, ReviewDecision } from "@/types";
 
-export type ReviewDecision = "approve" | "reject";
+const AUTO_SAVE_DELAY_MS = 300;
 
 interface UseInspectionFormOptions {
 	inspection: Inspection;
@@ -88,7 +88,7 @@ export function useInspectionForm({
 			}
 
 			setSubmitting(true);
-			const result = await saveDraft(current.id, payload);
+			const result = await saveDraft(current.id, payload, role);
 			setSubmitting(false);
 
 			if (!result.ok) {
@@ -110,10 +110,10 @@ export function useInspectionForm({
 
 			return true;
 		},
-		[saveDraft],
+		[role, saveDraft],
 	);
 
-	const scheduleAutoSave = useCallback(() => {
+	const queueAutoSave = useCallback(() => {
 		if (!editable || submitting) {
 			return;
 		}
@@ -124,12 +124,16 @@ export function useInspectionForm({
 
 		autoSaveTimerRef.current = setTimeout(() => {
 			void persistDraft({ silent: true });
-		}, 0);
+		}, AUTO_SAVE_DELAY_MS);
 	}, [editable, persistDraft, submitting]);
 
-	const handleAutoSave = useCallback(() => {
+	const saveDraftOnBlur = useCallback(() => {
 		if (!editable || submitting) {
 			return;
+		}
+
+		if (autoSaveTimerRef.current) {
+			clearTimeout(autoSaveTimerRef.current);
 		}
 
 		void persistDraft({ silent: true });
@@ -214,8 +218,8 @@ export function useInspectionForm({
 		motivoReprovacao,
 		setMotivoReprovacao,
 		updateField,
-		scheduleAutoSave,
-		handleAutoSave,
+		queueAutoSave,
+		saveDraftOnBlur,
 		handleSaveDraft,
 		handleSubmitForReview,
 		handleConfirmReview,

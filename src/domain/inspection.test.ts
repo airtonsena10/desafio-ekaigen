@@ -4,8 +4,8 @@ import {
 	applyInspectionAction,
 	generateProtocol,
 } from "@/domain/inspection.transitions";
-import type { Inspection } from "@/domain/inspection.types";
-import { createEmptyChecklist } from "@/domain/inspection.types";
+import { createEmptyChecklist } from "@/domain/inspection.constants";
+import type { Inspection } from "@/types/inspection.types";
 import {
 	canEditInspection,
 	validateApprove,

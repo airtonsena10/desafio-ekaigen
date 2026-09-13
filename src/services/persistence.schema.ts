@@ -1,13 +1,13 @@
+import { isInspectionStatus } from "@/domain/inspection.constants";
 import type {
 	ChecklistItem,
 	ChecklistItemId,
 	HistoryEntry,
 	Inspection,
-	InspectionStatus,
 	UserRole,
 	YesNo,
-} from "@/domain/inspection.types";
-import type { PersistedState } from "./persistence";
+} from "@/types/inspection.types";
+import type { PersistedState } from "@/types/persistence";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === "object" && value !== null;
@@ -27,15 +27,6 @@ function isYesNo(value: unknown): value is YesNo {
 
 function isUserRole(value: unknown): value is UserRole {
 	return value === "inspetor" || value === "revisor";
-}
-
-function isInspectionStatus(value: unknown): value is InspectionStatus {
-	return (
-		value === "em_preenchimento" ||
-		value === "em_aprovacao" ||
-		value === "aprovada" ||
-		value === "reprovada"
-	);
 }
 
 function isChecklistItemId(value: unknown): value is ChecklistItemId {

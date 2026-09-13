@@ -5,28 +5,34 @@ import { StatusBadge } from "@/components/inspections/status-badge";
 import { STATUS_THEME } from "@/components/inspections/status-theme";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import type { Inspection } from "@/domain/inspection.types";
+import {
+	type InspectionCardAction,
+	type InspectionCardVariant,
+	getInspectionCardActionLabel,
+} from "@/domain/inspection.permissions";
 import { formatInspectionDate } from "@/lib/format-date";
 import { cn } from "@/lib/utils";
+import type { Inspection } from "@/types";
 
 interface InspectionSummaryCardProps {
 	inspection: Inspection;
-	actionLabel?: string;
+	action?: InspectionCardAction;
 	onOpen: (id: string) => void;
 	className?: string;
-	variant?: "list" | "kanban";
+	variant?: InspectionCardVariant;
 }
 
 export function InspectionSummaryCard({
 	inspection,
-	actionLabel = "Ver detalhes",
+	action = "open",
 	onOpen,
 	className,
 	variant = "list",
 }: InspectionSummaryCardProps) {
 	const theme = STATUS_THEME[inspection.status];
 	const formattedDate = formatInspectionDate(inspection.data);
-	const isReviewAction = actionLabel === "Revisar";
+	const actionLabel = getInspectionCardActionLabel(action, variant);
+	const isReviewAction = action === "review";
 
 	return (
 		<Card

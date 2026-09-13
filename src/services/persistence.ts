@@ -1,12 +1,9 @@
-import type { Inspection } from "../domain/inspection.types";
 import { parsePersistedState } from "./persistence.schema";
+import type { PersistedState } from "@/types/persistence";
+
+export type { PersistedState } from "@/types/persistence";
 
 const STORAGE_KEY = "inspecoes-app-data";
-
-export interface PersistedState {
-	inspections: Inspection[];
-	protocolCounter: number;
-}
 
 export function createEmptyState(): PersistedState {
 	return {

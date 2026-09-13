@@ -9,8 +9,12 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import type { InspectionStatus } from "@/domain/inspection.types";
-import { INSPECTION_STATUSES, STATUS_LABELS } from "@/domain/inspection.types";
+import {
+	INSPECTION_STATUSES,
+	STATUS_LABELS,
+} from "@/domain/inspection.constants";
+import { parseInspectionFilterStatus } from "@/domain/inspection.queries";
+import type { InspectionStatus } from "@/types";
 
 interface SearchFiltersProps {
 	query: string;
@@ -42,7 +46,7 @@ export function SearchFilters({
 				<Select
 					value={status}
 					onValueChange={(value) =>
-						onStatusChange(value as InspectionStatus | "all")
+						onStatusChange(parseInspectionFilterStatus(value))
 					}
 				>
 					<SelectTrigger className="pl-9" aria-label="Filtrar por status">

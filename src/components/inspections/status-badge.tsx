@@ -1,7 +1,7 @@
 import { STATUS_THEME } from "@/components/inspections/status-theme";
 import { Badge } from "@/components/ui/badge";
-import type { InspectionStatus } from "@/domain/inspection.types";
-import { STATUS_LABELS } from "@/domain/inspection.types";
+import { STATUS_LABELS } from "@/domain/inspection.constants";
+import type { InspectionStatus } from "@/types/inspection.types";
 import { cn } from "@/lib/utils";
 
 export function StatusBadge({
