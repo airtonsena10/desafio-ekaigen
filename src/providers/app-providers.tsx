@@ -8,6 +8,7 @@ import {
 	useInspections,
 } from "@/providers/inspection-provider";
 import { RoleProvider } from "@/providers/role-provider";
+import { ThemeProvider } from "@/providers/theme-provider";
 
 function GlobalRefreshIndicator() {
 	const { refreshing } = useInspections();
@@ -16,12 +17,14 @@ function GlobalRefreshIndicator() {
 
 export function AppProviders({ children }: { children: ReactNode }) {
 	return (
-		<RoleProvider>
-			<InspectionProvider>
-				<GlobalRefreshIndicator />
-				{children}
-				<Toaster richColors closeButton position="top-right" />
-			</InspectionProvider>
-		</RoleProvider>
+		<ThemeProvider>
+			<RoleProvider>
+				<InspectionProvider>
+					<GlobalRefreshIndicator />
+					{children}
+					<Toaster richColors closeButton position="top-right" />
+				</InspectionProvider>
+			</RoleProvider>
+		</ThemeProvider>
 	);
 }

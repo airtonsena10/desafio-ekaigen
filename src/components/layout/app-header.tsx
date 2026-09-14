@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Suspense } from "react";
 import { SimulationPanel } from "@/components/dev/simulation-panel";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { StatusCounters } from "@/components/inspections/status-counters";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -33,7 +34,7 @@ export function AppHeader() {
 	const { inspections } = useInspections();
 
 	return (
-		<header className="border-b bg-background/90 backdrop-blur-md">
+		<header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur-md">
 			<div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-5">
 				<div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 					<div>
@@ -45,6 +46,7 @@ export function AppHeader() {
 						</h1>
 					</div>
 					<div className="flex flex-wrap items-center gap-2">
+						<ThemeToggle />
 						<div className="inline-flex rounded-xl border bg-muted/40 p-1">
 							<Button
 								size="sm"
@@ -65,8 +67,8 @@ export function AppHeader() {
 					</div>
 				</div>
 
-				<div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-					<nav className="inline-flex w-fit rounded-xl border bg-muted/40 p-1">
+				<div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+					<nav className="inline-flex w-fit shrink-0 rounded-xl border bg-muted/40 p-1">
 						{NAV_ITEMS.map(({ href, label, icon: Icon }) => {
 							const active = pathname === href;
 							return (
@@ -85,9 +87,11 @@ export function AppHeader() {
 							);
 						})}
 					</nav>
-					<Suspense fallback={<StatusCountersFallback />}>
-						<StatusCounters inspections={inspections} />
-					</Suspense>
+					<div className="min-w-0 flex-1 xl:max-w-3xl">
+						<Suspense fallback={<StatusCountersFallback />}>
+							<StatusCounters inspections={inspections} />
+						</Suspense>
+					</div>
 				</div>
 			</div>
 		</header>

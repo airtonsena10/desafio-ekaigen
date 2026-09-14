@@ -17,7 +17,7 @@ export function InspectionViewToolbar({
 	return (
 		<Card className="border bg-card/80 shadow-sm backdrop-blur">
 			<CardContent className="space-y-4 p-4 md:p-5">
-				<div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+				<div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
 					<div>
 						<h2 className="text-lg font-semibold">{title}</h2>
 						<p className="text-sm text-muted-foreground">{description}</p>
